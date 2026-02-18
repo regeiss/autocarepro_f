@@ -8,6 +8,7 @@ import 'package:printing/printing.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import '../data/models/models.dart';
+import 'app_logger.dart';
 
 class ReportGeneratorService {
   static final ReportGeneratorService _instance = ReportGeneratorService._internal();
@@ -28,10 +29,22 @@ class ReportGeneratorService {
     DateTime? startDate,
     DateTime? endDate,
   }) async {
-    final pdf = pw.Document();
+    AppLogger.info(
+      'Generating vehicle maintenance report',
+      tag: 'ReportGenerator',
+      data: {
+        'vehicleId': vehicle.id,
+        'totalRecords': records.length,
+        'startDate': startDate?.toIso8601String(),
+        'endDate': endDate?.toIso8601String(),
+      },
+    );
 
-    // Filter records by date if specified
-    var filteredRecords = records;
+    try {
+      final pdf = pw.Document();
+
+      // Filter records by date if specified
+      var filteredRecords = records;
     if (startDate != null || endDate != null) {
       filteredRecords = records.where((record) {
         final date = DateTime.fromMillisecondsSinceEpoch(record.serviceDate);
@@ -158,12 +171,32 @@ class ReportGeneratorService {
       ),
     );
 
-    // Save to file
-    final output = await _getSaveDirectory();
-    final file = File('${output.path}/vehicle_report_${vehicle.id}_${DateTime.now().millisecondsSinceEpoch}.pdf');
-    await file.writeAsBytes(await pdf.save());
-    
-    return file;
+      // Save to file
+      final output = await _getSaveDirectory();
+      final file = File('${output.path}/vehicle_report_${vehicle.id}_${DateTime.now().millisecondsSinceEpoch}.pdf');
+      await file.writeAsBytes(await pdf.save());
+      
+      AppLogger.info(
+        'Vehicle maintenance report generated successfully',
+        tag: 'ReportGenerator',
+        data: {
+          'vehicleId': vehicle.id,
+          'filePath': file.path,
+          'recordsIncluded': filteredRecords.length,
+        },
+      );
+      
+      return file;
+    } catch (e, stackTrace) {
+      AppLogger.error(
+        'Failed to generate vehicle maintenance report',
+        tag: 'ReportGenerator',
+        error: e,
+        stackTrace: stackTrace,
+        data: {'vehicleId': vehicle.id},
+      );
+      rethrow;
+    }
   }
 
   /// Generate summary report for all vehicles
@@ -171,7 +204,14 @@ class ReportGeneratorService {
     required List<Vehicle> vehicles,
     required Map<String, List<MaintenanceRecord>> maintenanceByVehicle,
   }) async {
-    final pdf = pw.Document();
+    AppLogger.info(
+      'Generating fleet maintenance report',
+      tag: 'ReportGenerator',
+      data: {'vehicleCount': vehicles.length},
+    );
+
+    try {
+      final pdf = pw.Document();
 
     pdf.addPage(
       pw.MultiPage(
@@ -287,17 +327,35 @@ class ReportGeneratorService {
                 ],
               ),
             );
-          }).toList(),
+          }),
         ],
       ),
     );
 
-    // Save to file
-    final output = await _getSaveDirectory();
-    final file = File('${output.path}/fleet_report_${DateTime.now().millisecondsSinceEpoch}.pdf');
-    await file.writeAsBytes(await pdf.save());
-    
-    return file;
+      // Save to file
+      final output = await _getSaveDirectory();
+      final file = File('${output.path}/fleet_report_${DateTime.now().millisecondsSinceEpoch}.pdf');
+      await file.writeAsBytes(await pdf.save());
+      
+      AppLogger.info(
+        'Fleet maintenance report generated successfully',
+        tag: 'ReportGenerator',
+        data: {
+          'filePath': file.path,
+          'vehicleCount': vehicles.length,
+        },
+      );
+      
+      return file;
+    } catch (e, stackTrace) {
+      AppLogger.error(
+        'Failed to generate fleet maintenance report',
+        tag: 'ReportGenerator',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      rethrow;
+    }
   }
 
   pw.Widget _buildStatItem(String label, String value) {
@@ -326,7 +384,14 @@ class ReportGeneratorService {
 
   /// Export maintenance records to CSV
   Future<File> exportMaintenanceToCSV(List<MaintenanceRecord> records) async {
-    final buffer = StringBuffer();
+    AppLogger.info(
+      'Exporting maintenance records to CSV',
+      tag: 'ReportGenerator',
+      data: {'recordCount': records.length},
+    );
+
+    try {
+      final buffer = StringBuffer();
     
     // Header
     buffer.writeln('Date,Service Type,Description,Cost,Mileage,Service Provider,Notes');
@@ -343,17 +408,42 @@ class ReportGeneratorService {
       buffer.writeln('$date,${record.serviceType},$description,$cost,$mileage,$provider,$notes');
     }
     
-    // Save to file
-    final output = await _getSaveDirectory();
-    final file = File('${output.path}/maintenance_export_${DateTime.now().millisecondsSinceEpoch}.csv');
-    await file.writeAsString(buffer.toString());
-    
-    return file;
+      // Save to file
+      final output = await _getSaveDirectory();
+      final file = File('${output.path}/maintenance_export_${DateTime.now().millisecondsSinceEpoch}.csv');
+      await file.writeAsString(buffer.toString());
+      
+      AppLogger.info(
+        'Maintenance records exported to CSV successfully',
+        tag: 'ReportGenerator',
+        data: {
+          'filePath': file.path,
+          'recordCount': records.length,
+        },
+      );
+      
+      return file;
+    } catch (e, stackTrace) {
+      AppLogger.error(
+        'Failed to export maintenance records to CSV',
+        tag: 'ReportGenerator',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      rethrow;
+    }
   }
 
   /// Export vehicles to CSV
   Future<File> exportVehiclesToCSV(List<Vehicle> vehicles) async {
-    final buffer = StringBuffer();
+    AppLogger.info(
+      'Exporting vehicles to CSV',
+      tag: 'ReportGenerator',
+      data: {'vehicleCount': vehicles.length},
+    );
+
+    try {
+      final buffer = StringBuffer();
     
     // Header
     buffer.writeln('Year,Make,Model,VIN,License Plate,Mileage,Purchase Date');
@@ -370,12 +460,30 @@ class ReportGeneratorService {
       buffer.writeln('${vehicle.year},${vehicle.make},${vehicle.model},$vin,$plate,$mileage,$purchaseDate');
     }
     
-    // Save to file
-    final output = await _getSaveDirectory();
-    final file = File('${output.path}/vehicles_export_${DateTime.now().millisecondsSinceEpoch}.csv');
-    await file.writeAsString(buffer.toString());
-    
-    return file;
+      // Save to file
+      final output = await _getSaveDirectory();
+      final file = File('${output.path}/vehicles_export_${DateTime.now().millisecondsSinceEpoch}.csv');
+      await file.writeAsString(buffer.toString());
+      
+      AppLogger.info(
+        'Vehicles exported to CSV successfully',
+        tag: 'ReportGenerator',
+        data: {
+          'filePath': file.path,
+          'vehicleCount': vehicles.length,
+        },
+      );
+      
+      return file;
+    } catch (e, stackTrace) {
+      AppLogger.error(
+        'Failed to export vehicles to CSV',
+        tag: 'ReportGenerator',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      rethrow;
+    }
   }
 
   String _escapeCsv(String value) {
@@ -400,17 +508,51 @@ class ReportGeneratorService {
 
   /// Print or share a PDF report
   Future<void> printReport(File pdfFile) async {
-    final bytes = await pdfFile.readAsBytes();
-    await Printing.layoutPdf(
-      onLayout: (format) async => bytes,
+    AppLogger.info(
+      'Printing report',
+      tag: 'ReportGenerator',
+      data: {'filePath': pdfFile.path},
     );
+
+    try {
+      final bytes = await pdfFile.readAsBytes();
+      await Printing.layoutPdf(
+        onLayout: (format) async => bytes,
+      );
+      AppLogger.debug('Report printed successfully', tag: 'ReportGenerator');
+    } catch (e, stackTrace) {
+      AppLogger.error(
+        'Failed to print report',
+        tag: 'ReportGenerator',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      rethrow;
+    }
   }
 
   /// Share PDF via system share sheet
   Future<void> shareReport(File pdfFile) async {
-    await Printing.sharePdf(
-      bytes: await pdfFile.readAsBytes(),
-      filename: pdfFile.path.split('/').last,
+    AppLogger.info(
+      'Sharing report',
+      tag: 'ReportGenerator',
+      data: {'filePath': pdfFile.path},
     );
+
+    try {
+      await Printing.sharePdf(
+        bytes: await pdfFile.readAsBytes(),
+        filename: pdfFile.path.split('/').last,
+      );
+      AppLogger.debug('Report shared successfully', tag: 'ReportGenerator');
+    } catch (e, stackTrace) {
+      AppLogger.error(
+        'Failed to share report',
+        tag: 'ReportGenerator',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      rethrow;
+    }
   }
 }

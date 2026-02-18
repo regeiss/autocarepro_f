@@ -2,9 +2,11 @@
 /// 
 /// This file demonstrates how to use the database in your app.
 /// DO NOT import this file in production - it's just for reference.
+library;
 
 import 'app_database.dart';
 import '../../data/models/models.dart';
+import '../app_logger.dart';
 
 /// Example class demonstrating database operations
 class DatabaseExample {
@@ -27,23 +29,23 @@ class DatabaseExample {
     );
 
     await database.vehicleDao.insertVehicle(vehicle);
-    print('Vehicle added: ${vehicle.displayName}');
+    AppLogger.info('Vehicle added: ${vehicle.displayName}', tag: 'DatabaseExample');
   }
 
   /// Example: Get all vehicles
   Future<void> exampleGetAllVehicles() async {
     final vehicles = await database.vehicleDao.getAllVehicles();
-    print('Found ${vehicles.length} vehicles');
+    AppLogger.info('Found ${vehicles.length} vehicles', tag: 'DatabaseExample');
 
     for (final vehicle in vehicles) {
-      print('- ${vehicle.displayName} (${vehicle.currentMileage} ${vehicle.mileageUnit})');
+      AppLogger.debug('- ${vehicle.displayName} (${vehicle.currentMileage} ${vehicle.mileageUnit})', tag: 'DatabaseExample');
     }
   }
 
   /// Example: Search vehicles
   Future<void> exampleSearchVehicles(String query) async {
     final results = await database.vehicleDao.searchVehicles(query);
-    print('Search "$query" found ${results.length} results');
+    AppLogger.info('Search "$query" found ${results.length} results', tag: 'DatabaseExample');
   }
 
   /// Example: Add maintenance record
@@ -59,7 +61,7 @@ class DatabaseExample {
     );
 
     await database.maintenanceRecordDao.insertRecord(record);
-    print('Maintenance record added');
+    AppLogger.info('Maintenance record added', tag: 'DatabaseExample');
   }
 
   /// Example: Get maintenance history for a vehicle
@@ -67,10 +69,10 @@ class DatabaseExample {
     final records = await database.maintenanceRecordDao
         .getRecordsByVehicleId(vehicleId);
 
-    print('Found ${records.length} maintenance records');
+    AppLogger.info('Found ${records.length} maintenance records', tag: 'DatabaseExample');
 
     for (final record in records) {
-      print('- ${record.serviceType} on ${record.serviceDateAsDateTime}');
+      AppLogger.debug('- ${record.serviceType} on ${record.serviceDateAsDateTime}', tag: 'DatabaseExample');
     }
   }
 
@@ -79,7 +81,7 @@ class DatabaseExample {
     final totalCost = await database.maintenanceRecordDao
         .getTotalCostByVehicle(vehicleId);
 
-    print('Total maintenance cost: \$${totalCost?.toStringAsFixed(2) ?? "0.00"}');
+    AppLogger.info('Total maintenance cost: \$${totalCost?.toStringAsFixed(2) ?? "0.00"}', tag: 'DatabaseExample');
   }
 
   /// Example: Add a reminder
@@ -94,16 +96,16 @@ class DatabaseExample {
     );
 
     await database.reminderDao.insertReminder(reminder);
-    print('Reminder created for next oil change at 50,000 miles');
+    AppLogger.info('Reminder created for next oil change at 50,000 miles', tag: 'DatabaseExample');
   }
 
   /// Example: Get active reminders
   Future<void> exampleGetActiveReminders() async {
     final reminders = await database.reminderDao.getActiveReminders();
-    print('Active reminders: ${reminders.length}');
+    AppLogger.info('Active reminders: ${reminders.length}', tag: 'DatabaseExample');
 
     for (final reminder in reminders) {
-      print('- ${reminder.serviceType} (${reminder.reminderType})');
+      AppLogger.debug('- ${reminder.serviceType} (${reminder.reminderType})', tag: 'DatabaseExample');
     }
   }
 
@@ -113,7 +115,7 @@ class DatabaseExample {
     final dueReminders = await database.reminderDao
         .getDueTimeReminders(currentTime);
 
-    print('Due reminders: ${dueReminders.length}');
+    AppLogger.info('Due reminders: ${dueReminders.length}', tag: 'DatabaseExample');
   }
 
   /// Example: Add service provider
@@ -132,7 +134,7 @@ class DatabaseExample {
     );
 
     await database.serviceProviderDao.insertProvider(provider);
-    print('Service provider added: ${provider.name}');
+    AppLogger.info('Service provider added: ${provider.name}', tag: 'DatabaseExample');
   }
 
   /// Example: Get top-rated providers
@@ -140,9 +142,9 @@ class DatabaseExample {
     final topProviders = await database.serviceProviderDao
         .getTopRatedProviders(5);
 
-    print('Top 5 service providers:');
+    AppLogger.info('Top 5 service providers:', tag: 'DatabaseExample');
     for (final provider in topProviders) {
-      print('- ${provider.name} (${provider.rating}★)');
+      AppLogger.debug('- ${provider.name} (${provider.rating}★)', tag: 'DatabaseExample');
     }
   }
 
@@ -159,7 +161,7 @@ class DatabaseExample {
     );
 
     await database.documentDao.insertDocument(document);
-    print('Document added: ${document.title}');
+    AppLogger.info('Document added: ${document.title}', tag: 'DatabaseExample');
   }
 
   /// Example: Get documents for a vehicle
@@ -167,10 +169,10 @@ class DatabaseExample {
     final documents = await database.documentDao
         .getDocumentsByVehicleId(vehicleId);
 
-    print('Found ${documents.length} documents');
+    AppLogger.info('Found ${documents.length} documents', tag: 'DatabaseExample');
 
     for (final doc in documents) {
-      print('- ${doc.title} (${doc.fileSizeFormatted})');
+      AppLogger.debug('- ${doc.title} (${doc.fileSizeFormatted})', tag: 'DatabaseExample');
     }
   }
 
@@ -183,13 +185,13 @@ class DatabaseExample {
       timestamp,
     );
 
-    print('Mileage updated to $newMileage');
+    AppLogger.info('Mileage updated to $newMileage', tag: 'DatabaseExample');
   }
 
   /// Example: Delete vehicle (cascade deletes related records)
   Future<void> exampleDeleteVehicle(String vehicleId) async {
     await database.vehicleDao.deleteVehicleById(vehicleId);
-    print('Vehicle deleted (including all related records)');
+    AppLogger.info('Vehicle deleted (including all related records)', tag: 'DatabaseExample');
   }
 
   /// Example: Using streams for reactive UI
@@ -236,11 +238,11 @@ class DatabaseExample {
     final totalCost = await database.maintenanceRecordDao
         .getTotalCostByVehicle(vehicle.id);
 
-    print('Vehicle setup complete!');
-    print('- Vehicle: ${vehicle.displayName}');
-    print('- Maintenance records: $recordCount');
-    print('- Total cost: \$${totalCost?.toStringAsFixed(2)}');
-    print('- Active reminders: 1');
+    AppLogger.info('Vehicle setup complete!', tag: 'DatabaseExample');
+    AppLogger.info('- Vehicle: ${vehicle.displayName}', tag: 'DatabaseExample');
+    AppLogger.info('- Maintenance records: $recordCount', tag: 'DatabaseExample');
+    AppLogger.info('- Total cost: \$${totalCost?.toStringAsFixed(2)}', tag: 'DatabaseExample');
+    AppLogger.info('- Active reminders: 1', tag: 'DatabaseExample');
   }
 
   /// Close database connection
@@ -256,21 +258,21 @@ Future<void> runAllExamples() async {
   try {
     // Initialize database
     await example.init();
-    print('✅ Database initialized\n');
+    AppLogger.info('Database initialized', tag: 'DatabaseExample');
 
     // Run complete workflow example
     await example.exampleCompleteWorkflow();
-    print('\n✅ Complete workflow executed');
+    AppLogger.info('Complete workflow executed', tag: 'DatabaseExample');
 
     // Get all vehicles
     await example.exampleGetAllVehicles();
-    print('\n✅ Retrieved all vehicles');
+    AppLogger.info('Retrieved all vehicles', tag: 'DatabaseExample');
 
-  } catch (e) {
-    print('❌ Error: $e');
+  } catch (e, stackTrace) {
+    AppLogger.error('Error running examples', tag: 'DatabaseExample', error: e, stackTrace: stackTrace);
   } finally {
     await example.close();
-    print('\n✅ Database closed');
+    AppLogger.info('Database closed', tag: 'DatabaseExample');
   }
 }
 

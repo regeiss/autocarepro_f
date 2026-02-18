@@ -43,13 +43,13 @@ class DashboardScreen extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.settings),
             onPressed: () {
-              // TODO: Navigate to settings
+              // TODO(roberto): Navigate to settings
             },
             tooltip: 'Settings',
           ),
         ],
       ),
-      body: vehiclesAsync.when(
+      body: vehiclesAsync.when( 
         loading: () => const Center(
           child: CircularProgressIndicator(),
         ),

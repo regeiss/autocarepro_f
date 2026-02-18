@@ -1011,7 +1011,7 @@ class _$ReminderDao extends ReminderDao {
   @override
   Future<List<Reminder>> getTimeBasedReminders() async {
     return _queryAdapter.queryList(
-        'SELECT * FROM reminders WHERE reminderType = \"time\" AND isActive = 1 ORDER BY nextReminderDate ASC',
+        'SELECT * FROM reminders WHERE reminderType = "time" AND isActive = 1 ORDER BY nextReminderDate ASC',
         mapper: (Map<String, Object?> row) => Reminder(
             id: row['id'] as String,
             vehicleId: row['vehicleId'] as String,
@@ -1032,7 +1032,7 @@ class _$ReminderDao extends ReminderDao {
   @override
   Future<List<Reminder>> getMileageBasedReminders() async {
     return _queryAdapter.queryList(
-        'SELECT * FROM reminders WHERE reminderType = \"mileage\" AND isActive = 1 ORDER BY nextReminderMileage ASC',
+        'SELECT * FROM reminders WHERE reminderType = "mileage" AND isActive = 1 ORDER BY nextReminderMileage ASC',
         mapper: (Map<String, Object?> row) => Reminder(
             id: row['id'] as String,
             vehicleId: row['vehicleId'] as String,
@@ -1054,7 +1054,7 @@ class _$ReminderDao extends ReminderDao {
   Future<List<Reminder>> getMileageBasedRemindersByVehicle(
       String vehicleId) async {
     return _queryAdapter.queryList(
-        'SELECT * FROM reminders      WHERE vehicleId = ?1      AND reminderType = \"mileage\"      AND isActive = 1      ORDER BY nextReminderMileage ASC',
+        'SELECT * FROM reminders      WHERE vehicleId = ?1      AND reminderType = "mileage"      AND isActive = 1      ORDER BY nextReminderMileage ASC',
         mapper: (Map<String, Object?> row) => Reminder(id: row['id'] as String, vehicleId: row['vehicleId'] as String, serviceType: row['serviceType'] as String, reminderType: row['reminderType'] as String, intervalValue: row['intervalValue'] as int, intervalUnit: row['intervalUnit'] as String, lastServiceDate: row['lastServiceDate'] as int?, lastServiceMileage: row['lastServiceMileage'] as double?, nextReminderDate: row['nextReminderDate'] as int?, nextReminderMileage: row['nextReminderMileage'] as double?, isActive: (row['isActive'] as int) != 0, notifyBefore: row['notifyBefore'] as int, createdAt: row['createdAt'] as int, updatedAt: row['updatedAt'] as int),
         arguments: [vehicleId]);
   }
@@ -1062,7 +1062,7 @@ class _$ReminderDao extends ReminderDao {
   @override
   Future<List<Reminder>> getDueTimeReminders(int currentTime) async {
     return _queryAdapter.queryList(
-        'SELECT * FROM reminders      WHERE reminderType = \"time\"      AND isActive = 1      AND nextReminderDate IS NOT NULL      AND nextReminderDate <= ?1     ORDER BY nextReminderDate ASC',
+        'SELECT * FROM reminders      WHERE reminderType = "time"      AND isActive = 1      AND nextReminderDate IS NOT NULL      AND nextReminderDate <= ?1     ORDER BY nextReminderDate ASC',
         mapper: (Map<String, Object?> row) => Reminder(id: row['id'] as String, vehicleId: row['vehicleId'] as String, serviceType: row['serviceType'] as String, reminderType: row['reminderType'] as String, intervalValue: row['intervalValue'] as int, intervalUnit: row['intervalUnit'] as String, lastServiceDate: row['lastServiceDate'] as int?, lastServiceMileage: row['lastServiceMileage'] as double?, nextReminderDate: row['nextReminderDate'] as int?, nextReminderMileage: row['nextReminderMileage'] as double?, isActive: (row['isActive'] as int) != 0, notifyBefore: row['notifyBefore'] as int, createdAt: row['createdAt'] as int, updatedAt: row['updatedAt'] as int),
         arguments: [currentTime]);
   }
@@ -1073,7 +1073,7 @@ class _$ReminderDao extends ReminderDao {
     int futureTime,
   ) async {
     return _queryAdapter.queryList(
-        'SELECT * FROM reminders      WHERE reminderType = \"time\"      AND isActive = 1      AND nextReminderDate IS NOT NULL      AND nextReminderDate BETWEEN ?1 AND ?2     ORDER BY nextReminderDate ASC',
+        'SELECT * FROM reminders      WHERE reminderType = "time"      AND isActive = 1      AND nextReminderDate IS NOT NULL      AND nextReminderDate BETWEEN ?1 AND ?2     ORDER BY nextReminderDate ASC',
         mapper: (Map<String, Object?> row) => Reminder(id: row['id'] as String, vehicleId: row['vehicleId'] as String, serviceType: row['serviceType'] as String, reminderType: row['reminderType'] as String, intervalValue: row['intervalValue'] as int, intervalUnit: row['intervalUnit'] as String, lastServiceDate: row['lastServiceDate'] as int?, lastServiceMileage: row['lastServiceMileage'] as double?, nextReminderDate: row['nextReminderDate'] as int?, nextReminderMileage: row['nextReminderMileage'] as double?, isActive: (row['isActive'] as int) != 0, notifyBefore: row['notifyBefore'] as int, createdAt: row['createdAt'] as int, updatedAt: row['updatedAt'] as int),
         arguments: [currentTime, futureTime]);
   }
