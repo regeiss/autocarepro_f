@@ -41,6 +41,14 @@ final allActiveRemindersProvider = FutureProvider<List<Reminder>>((ref) async {
   return await repository.getActiveReminders();
 });
 
+/// Provider for recently created reminders across all vehicles
+final recentRemindersProvider = FutureProvider.family<List<Reminder>, int>((ref, limit) async {
+  final repository = ref.watch(reminderRepositoryProvider);
+  final reminders = await repository.getAllReminders();
+  reminders.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+  return reminders.take(limit).toList();
+});
+
 // ============================================================================
 // Single Reminder Providers
 // ============================================================================

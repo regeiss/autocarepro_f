@@ -7,6 +7,8 @@ import '../../../data/providers/document_providers.dart';
 import '../../../data/providers/service_provider_providers.dart';
 import '../../../data/providers/analytics_providers.dart';
 import '../widgets/dashboard_stats.dart';
+import '../widgets/quick_actions.dart';
+import '../widgets/recent_activity.dart';
 import '../widgets/vehicle_card.dart';
 import '../widgets/empty_state.dart';
 import '../../vehicles/screens/vehicle_form_screen.dart';
@@ -21,6 +23,7 @@ import '../../service_providers/widgets/service_provider_list_tile.dart';
 import '../../service_providers/screens/service_provider_detail_screen.dart';
 import '../../service_providers/screens/service_providers_list_screen.dart';
 import '../../reports/screens/reports_screen.dart';
+import '../../settings/screens/settings_screen.dart';
 
 /// Dashboard screen - Main entry point of the app
 /// 
@@ -43,7 +46,11 @@ class DashboardScreen extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.settings),
             onPressed: () {
-              // TODO(roberto): Navigate to settings
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const SettingsScreen(),
+                ),
+              );
             },
             tooltip: 'Settings',
           ),
@@ -100,6 +107,26 @@ class DashboardScreen extends ConsumerWidget {
                   const DashboardStats(),
 
                   const SizedBox(height: 16),
+
+                  // Quick actions
+                  const QuickActions(),
+
+                  const SizedBox(height: 20),
+
+                  // Recent activity
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Text(
+                      'Recent Activity',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                  ),
+
+                  const SizedBox(height: 8),
+
+                  const RecentActivity(limit: 5),
+
+                  const SizedBox(height: 24),
 
                   // Vehicles section
                   Padding(
