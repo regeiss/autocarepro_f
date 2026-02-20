@@ -24,6 +24,20 @@ class ServiceProviderRepository {
     }
   }
 
+  /// Get service providers by profile
+  Future<List<ServiceProvider>> getProvidersByProfile(String profileId) async {
+    try {
+      return await _database.serviceProviderDao.getProvidersByProfileId(profileId);
+    } catch (e) {
+      throw RepositoryException('Failed to get service providers: $e');
+    }
+  }
+
+  /// Watch service providers by profile
+  Stream<List<ServiceProvider>> watchProvidersByProfile(String profileId) {
+    return _database.serviceProviderDao.watchProvidersByProfileId(profileId);
+  }
+
   /// Watch all service providers (reactive stream)
   Stream<List<ServiceProvider>> watchAllProviders() {
     return _database.serviceProviderDao.watchAllProviders();
@@ -72,6 +86,19 @@ class ServiceProviderRepository {
   Future<List<ServiceProvider>> getTopRatedProviders({int limit = 10}) async {
     try {
       return await _database.serviceProviderDao.getTopRatedProviders(limit);
+    } catch (e) {
+      throw RepositoryException('Failed to get top rated providers: $e');
+    }
+  }
+
+  /// Get top rated providers by profile
+  Future<List<ServiceProvider>> getTopRatedProvidersByProfile(
+    String profileId, {
+    int limit = 10,
+  }) async {
+    try {
+      return await _database.serviceProviderDao
+          .getTopRatedProvidersByProfile(profileId, limit);
     } catch (e) {
       throw RepositoryException('Failed to get top rated providers: $e');
     }

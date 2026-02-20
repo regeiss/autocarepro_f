@@ -3,6 +3,7 @@ library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/models.dart';
+import 'profile_providers.dart';
 import 'repository_providers.dart';
 
 // ============================================================================
@@ -21,10 +22,16 @@ final maintenanceStreamProvider = StreamProvider.family<List<MaintenanceRecord>,
   return repository.watchRecordsByVehicle(vehicleId);
 });
 
-/// Provider for recent maintenance records across all vehicles
+/// Provider for recent maintenance records (profile-scoped)
 final recentMaintenanceProvider = FutureProvider.family<List<MaintenanceRecord>, int>((ref, limit) async {
-  final repository = ref.watch(maintenanceRepositoryProvider);
-  return await repository.getRecentRecords(limit: limit);
+  final profileId = ref.watch(currentProfileIdProvider).value;
+  if (profileId == null) return [];
+  final vehicleRepo = ref.watch(vehicleRepositoryProvider);
+  final maintenanceRepo = ref.watch(maintenanceRepositoryProvider);
+  final vehicles = await vehicleRepo.getVehiclesByProfile(profileId);
+  final vehicleIds = vehicles.map((v) => v.id).toSet();
+  final records = await maintenanceRepo.getRecentRecords(limit: limit * 2);
+  return records.where((r) => vehicleIds.contains(r.vehicleId)).take(limit).toList();
 });
 
 // ============================================================================

@@ -2,6 +2,7 @@
 // 
 // Usage: import 'package:autocarepro/services/local_database/daos/daos.dart';
 
+export 'profile_dao.dart';
 export 'vehicle_dao.dart';
 export 'maintenance_record_dao.dart';
 export 'reminder_dao.dart';

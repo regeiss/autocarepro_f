@@ -3,6 +3,7 @@ library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/models.dart';
+import 'profile_providers.dart';
 import 'repository_providers.dart';
 import '../repositories/document_repository.dart';
 
@@ -28,10 +29,16 @@ final documentsByTypeProvider = FutureProvider.family<List<Document>, ({String v
   return await repository.getDocumentsByVehicleAndType(params.vehicleId, params.type);
 });
 
-/// Provider for recent documents across all vehicles
+/// Provider for recent documents (profile-scoped)
 final recentDocumentsProvider = FutureProvider.family<List<Document>, int>((ref, limit) async {
-  final repository = ref.watch(documentRepositoryProvider);
-  return await repository.getRecentDocuments(limit: limit);
+  final profileId = ref.watch(currentProfileIdProvider).value;
+  if (profileId == null) return [];
+  final vehicleRepo = ref.watch(vehicleRepositoryProvider);
+  final documentRepo = ref.watch(documentRepositoryProvider);
+  final vehicles = await vehicleRepo.getVehiclesByProfile(profileId);
+  final vehicleIds = vehicles.map((v) => v.id).toSet();
+  final documents = await documentRepo.getRecentDocuments(limit: limit * 2);
+  return documents.where((d) => vehicleIds.contains(d.vehicleId)).take(limit).toList();
 });
 
 /// Provider for image documents only

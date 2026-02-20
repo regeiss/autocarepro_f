@@ -6,11 +6,15 @@ import 'package:uuid/uuid.dart';
   tableName: 'service_providers',
   indices: [
     Index(value: ['name']),
+    Index(value: ['profileId']),
   ],
 )
 class ServiceProvider {
   @PrimaryKey()
   final String id;
+
+  @ColumnInfo(name: 'profileId')
+  final String profileId;
 
   final String name;
   final String? phone;
@@ -25,6 +29,7 @@ class ServiceProvider {
 
   ServiceProvider({
     required this.id,
+    required this.profileId,
     required this.name,
     this.phone,
     this.email,
@@ -39,6 +44,7 @@ class ServiceProvider {
 
   /// Factory constructor for creating new service providers
   factory ServiceProvider.create({
+    required String profileId,
     required String name,
     String? phone,
     String? email,
@@ -51,6 +57,7 @@ class ServiceProvider {
     final now = DateTime.now();
     return ServiceProvider(
       id: const Uuid().v4(),
+      profileId: profileId,
       name: name,
       phone: phone,
       email: email,
@@ -68,6 +75,7 @@ class ServiceProvider {
 
   /// Copy with method for updates
   ServiceProvider copyWith({
+    String? profileId,
     String? name,
     String? phone,
     String? email,
@@ -79,6 +87,7 @@ class ServiceProvider {
   }) {
     return ServiceProvider(
       id: id,
+      profileId: profileId ?? this.profileId,
       name: name ?? this.name,
       phone: phone ?? this.phone,
       email: email ?? this.email,
@@ -117,6 +126,7 @@ class ServiceProvider {
 
   /// Validation
   String? validate() {
+    if (profileId.trim().isEmpty) return 'Profile is required';
     if (name.trim().isEmpty) return 'Name is required';
     if (rating != null && (rating! < 1.0 || rating! > 5.0)) {
       return 'Rating must be between 1.0 and 5.0';

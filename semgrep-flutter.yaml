@@ -1,0 +1,36 @@
+rules:
+  - id: http-sem-https
+    patterns:
+      - pattern: Uri.parse("http://...")
+    message: "Use HTTPS em vez de HTTP"
+    languages: [dart]
+    severity: WARNING
+
+  - id: print-em-producao
+    pattern: print(...)
+    message: "Remova print() antes de ir para produção"
+    languages: [dart]
+    severity: INFO
+
+  - id: senha-hardcoded
+    patterns:
+      - pattern: |
+          String $VAR = "...";
+      - metavariable-regex:
+          metavariable: $VAR
+          regex: (password|senha|secret|token|apikey|api_key)
+    message: "Possível credencial hardcoded em '$VAR'"
+    languages: [dart]
+    severity: ERROR
+
+  - id: shared-preferences-sem-criptografia
+    pattern: SharedPreferences.getInstance()
+    message: "Considere usar flutter_secure_storage para dados sensíveis"
+    languages: [dart]
+    severity: WARNING
+
+  - id: debug-mode-em-release
+    pattern: kDebugMode
+    message: "Verifique se esse bloco não vaza informações em produção"
+    languages: [dart]
+    severity: INFO

@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../data/models/models.dart';
+import '../../../data/providers/profile_providers.dart';
 import '../../../data/providers/repository_providers.dart';
 
 /// Type of activity item in the recent activity feed
@@ -24,12 +25,18 @@ class ActivityItem {
   });
 }
 
-/// Provider for combined recent activity across maintenance, reminders, and documents
+/// Provider for combined recent activity (profile-scoped)
 final recentActivityProvider = FutureProvider.family<List<ActivityItem>, int>((ref, limit) async {
+  final profileId = ref.watch(currentProfileIdProvider).value;
+  if (profileId == null) return [];
+
   final maintenanceRepo = ref.watch(maintenanceRepositoryProvider);
   final reminderRepo = ref.watch(reminderRepositoryProvider);
   final documentRepo = ref.watch(documentRepositoryProvider);
   final vehicleRepo = ref.watch(vehicleRepositoryProvider);
+
+  final vehicles = await vehicleRepo.getVehiclesByProfile(profileId);
+  final vehicleIds = vehicles.map((v) => v.id).toSet();
 
   final results = await Future.wait([
     maintenanceRepo.getRecentRecords(limit: limit * 2),
@@ -37,9 +44,15 @@ final recentActivityProvider = FutureProvider.family<List<ActivityItem>, int>((r
     documentRepo.getRecentDocuments(limit: limit * 2),
   ]);
 
-  final maintenanceRecords = results[0] as List<MaintenanceRecord>;
-  final reminders = results[1] as List<Reminder>;
-  final documents = results[2] as List<Document>;
+  final maintenanceRecords = (results[0] as List<MaintenanceRecord>)
+      .where((r) => vehicleIds.contains(r.vehicleId))
+      .toList();
+  final reminders = (results[1] as List<Reminder>)
+      .where((r) => vehicleIds.contains(r.vehicleId))
+      .toList();
+  final documents = (results[2] as List<Document>)
+      .where((d) => vehicleIds.contains(d.vehicleId))
+      .toList();
 
   // Get recent reminders sorted by createdAt
   reminders.sort((a, b) => b.createdAt.compareTo(a.createdAt));

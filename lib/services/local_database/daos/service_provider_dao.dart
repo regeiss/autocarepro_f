@@ -8,6 +8,14 @@ abstract class ServiceProviderDao {
   @Query('SELECT * FROM service_providers ORDER BY name ASC')
   Future<List<ServiceProvider>> getAllProviders();
 
+  /// Get service providers by profile ID
+  @Query('SELECT * FROM service_providers WHERE profileId = :profileId ORDER BY name ASC')
+  Future<List<ServiceProvider>> getProvidersByProfileId(String profileId);
+
+  /// Watch service providers by profile ID
+  @Query('SELECT * FROM service_providers WHERE profileId = :profileId ORDER BY name ASC')
+  Stream<List<ServiceProvider>> watchProvidersByProfileId(String profileId);
+
   /// Get all service providers as a stream
   @Query('SELECT * FROM service_providers ORDER BY name ASC')
   Stream<List<ServiceProvider>> watchAllProviders();
@@ -45,6 +53,15 @@ abstract class ServiceProviderDao {
     LIMIT :limit
   ''')
   Future<List<ServiceProvider>> getTopRatedProviders(int limit);
+
+  /// Get top rated providers by profile
+  @Query('''
+    SELECT * FROM service_providers 
+    WHERE profileId = :profileId AND rating IS NOT NULL 
+    ORDER BY rating DESC, name ASC
+    LIMIT :limit
+  ''')
+  Future<List<ServiceProvider>> getTopRatedProvidersByProfile(String profileId, int limit);
 
   /// Get service providers with no rating
   @Query('''
@@ -89,4 +106,8 @@ abstract class ServiceProviderDao {
   /// Delete all service providers
   @Query('DELETE FROM service_providers')
   Future<void> deleteAllProviders();
+
+  /// Delete service providers by profile ID
+  @Query('DELETE FROM service_providers WHERE profileId = :profileId')
+  Future<void> deleteByProfileId(String profileId);
 }

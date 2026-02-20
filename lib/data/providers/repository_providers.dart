@@ -2,6 +2,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../repositories/repositories.dart';
 import 'database_provider.dart';
 
+/// Provider for ProfileRepository
+final profileRepositoryProvider = Provider<ProfileRepository>((ref) {
+  final database = ref.watch(databaseProvider);
+  return ProfileRepository(database);
+});
+
 /// Provider for VehicleRepository
 /// 
 /// Provides access to vehicle data operations.

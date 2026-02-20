@@ -3,6 +3,7 @@ library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/models.dart';
+import 'profile_providers.dart';
 import 'repository_providers.dart';
 
 // ============================================================================
@@ -21,18 +22,16 @@ final remindersStreamProvider = StreamProvider.family<List<Reminder>, String>((r
   return repository.watchRemindersByVehicle(vehicleId);
 });
 
-/// Provider for upcoming reminders across all vehicles (dashboard)
+/// Provider for upcoming reminders (profile-scoped)
 final upcomingRemindersProvider = FutureProvider.family<List<Reminder>, int>((ref, limit) async {
-  final repository = ref.watch(reminderRepositoryProvider);
-  final reminders = await repository.getUpcomingTimeReminders(daysAhead: limit * 7);
-  // Sort and limit
-  reminders.sort((a, b) {
-    if (a.nextReminderDate != null && b.nextReminderDate != null) {
-      return a.nextReminderDate!.compareTo(b.nextReminderDate!);
-    }
-    return 0;
-  });
-  return reminders.take(limit).toList();
+  final profileId = ref.watch(currentProfileIdProvider).value;
+  if (profileId == null) return [];
+  final vehicleRepo = ref.watch(vehicleRepositoryProvider);
+  final reminderRepo = ref.watch(reminderRepositoryProvider);
+  final vehicles = await vehicleRepo.getVehiclesByProfile(profileId);
+  final vehicleIds = vehicles.map((v) => v.id).toSet();
+  final reminders = await reminderRepo.getUpcomingTimeReminders(daysAhead: limit * 7);
+  return reminders.where((r) => vehicleIds.contains(r.vehicleId)).take(limit).toList();
 });
 
 /// Provider for all active reminders across all vehicles

@@ -23,6 +23,20 @@ class VehicleRepository {
     }
   }
 
+  /// Get vehicles by profile ID
+  Future<List<Vehicle>> getVehiclesByProfile(String profileId) async {
+    try {
+      return await _database.vehicleDao.getVehiclesByProfileId(profileId);
+    } catch (e) {
+      throw RepositoryException('Failed to get vehicles: $e');
+    }
+  }
+
+  /// Watch vehicles by profile (reactive stream)
+  Stream<List<Vehicle>> watchVehiclesByProfile(String profileId) {
+    return _database.vehicleDao.watchVehiclesByProfileId(profileId);
+  }
+
   /// Watch all vehicles (reactive stream)
   Stream<List<Vehicle>> watchAllVehicles() {
     return _database.vehicleDao.watchAllVehicles();
@@ -42,13 +56,23 @@ class VehicleRepository {
     return _database.vehicleDao.watchVehicleById(id);
   }
 
-  /// Search vehicles by query (make, model, or year)
-  Future<List<Vehicle>> searchVehicles(String query) async {
+  /// Search vehicles by query (make, model, or year) within profile
+  Future<List<Vehicle>> searchVehicles(String profileId, String query) async {
     try {
       if (query.trim().isEmpty) {
-        return await getAllVehicles();
+        return await getVehiclesByProfile(profileId);
       }
-      return await _database.vehicleDao.searchVehicles(query);
+      return await _database.vehicleDao.searchVehicles(profileId, query);
+    } catch (e) {
+      throw RepositoryException('Failed to search vehicles: $e');
+    }
+  }
+
+  /// Search all vehicles (legacy)
+  Future<List<Vehicle>> searchAllVehicles(String query) async {
+    try {
+      if (query.trim().isEmpty) return await getAllVehicles();
+      return await _database.vehicleDao.searchAllVehicles(query);
     } catch (e) {
       throw RepositoryException('Failed to search vehicles: $e');
     }

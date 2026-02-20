@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../data/models/vehicle_model.dart';
+import '../../../data/providers/profile_providers.dart';
 import '../../../data/providers/repository_providers.dart';
 import '../../../data/providers/vehicle_providers.dart';
 import '../../../data/repositories/vehicle_repository.dart';
@@ -331,7 +332,17 @@ class _VehicleFormScreenState extends ConsumerState<VehicleFormScreen> {
         }
       } else {
         // Create new vehicle
+        final profileId = ref.read(currentProfileIdProvider).value;
+        if (profileId == null) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Please select a profile first')),
+            );
+          }
+          return;
+        }
         final vehicle = Vehicle.create(
+          profileId: profileId,
           make: _makeController.text.trim(),
           model: _modelController.text.trim(),
           year: int.parse(_yearController.text.trim()),

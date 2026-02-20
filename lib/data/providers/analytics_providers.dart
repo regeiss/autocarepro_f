@@ -2,6 +2,7 @@
 library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'profile_providers.dart';
 import 'repository_providers.dart';
 
 // ============================================================================
@@ -51,28 +52,47 @@ final maintenanceCostAnalyticsProvider = FutureProvider.family<MaintenanceCostAn
   );
 });
 
-/// Provider for all vehicles analytics
+/// Provider for all vehicles analytics (profile-scoped)
 final allVehiclesAnalyticsProvider = FutureProvider<AllVehiclesAnalytics>((ref) async {
+  final profileId = ref.watch(currentProfileIdProvider).value;
+  if (profileId == null) {
+    return AllVehiclesAnalytics(
+      totalVehicles: 0,
+      totalMaintenanceRecords: 0,
+      totalMaintenanceCost: 0,
+      totalReminders: 0,
+      totalDocuments: 0,
+      totalServiceProviders: 0,
+      averageCostPerVehicle: 0,
+    );
+  }
   final vehicleRepo = ref.watch(vehicleRepositoryProvider);
   final maintenanceRepo = ref.watch(maintenanceRepositoryProvider);
   final reminderRepo = ref.watch(reminderRepositoryProvider);
   final documentRepo = ref.watch(documentRepositoryProvider);
   final providerRepo = ref.watch(serviceProviderRepositoryProvider);
   
-  final vehicles = await vehicleRepo.getAllVehicles();
+  final vehicles = await vehicleRepo.getVehiclesByProfile(profileId);
   final totalVehicles = vehicles.length;
   
-  final allMaintenance = await maintenanceRepo.getAllRecords();
+  final vehicleIds = vehicles.map((v) => v.id).toSet();
+  final allMaintenance = (await maintenanceRepo.getAllRecords())
+      .where((r) => vehicleIds.contains(r.vehicleId))
+      .toList();
   final totalMaintenanceRecords = allMaintenance.length;
   final totalMaintenanceCost = allMaintenance.fold(0.0, (sum, r) => sum + (r.cost ?? 0));
   
-  final allReminders = await reminderRepo.getActiveReminders();
+  final allReminders = (await reminderRepo.getActiveReminders())
+      .where((r) => vehicleIds.contains(r.vehicleId))
+      .toList();
   final totalReminders = allReminders.length;
   
-  final allDocuments = await documentRepo.getAllDocuments();
+  final allDocuments = (await documentRepo.getAllDocuments())
+      .where((d) => vehicleIds.contains(d.vehicleId))
+      .toList();
   final totalDocuments = allDocuments.length;
   
-  final allProviders = await providerRepo.getAllProviders();
+  final allProviders = await providerRepo.getProvidersByProfile(profileId);
   final totalProviders = allProviders.length;
   
   return AllVehiclesAnalytics(

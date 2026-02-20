@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/theme.dart';
+import '../../profiles/screens/profiles_list_screen.dart';
 import '../providers/settings_provider.dart';
 
 /// Settings screen for app preferences
@@ -17,6 +18,25 @@ class SettingsScreen extends ConsumerWidget {
       ),
       body: ListView(
         children: [
+          // Profiles section
+          _SectionHeader(title: 'Profiles'),
+          Card(
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: ListTile(
+              leading: Icon(Icons.person, color: AppTheme.primaryColor),
+              title: const Text('Manage Profiles'),
+              subtitle: const Text('Switch profiles, add or edit'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const ProfilesListScreen(),
+                  ),
+                );
+              },
+            ),
+          ),
+
           // Appearance section
           _SectionHeader(title: 'Appearance'),
           Card(

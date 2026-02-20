@@ -3,6 +3,7 @@ library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/models.dart';
+import 'profile_providers.dart';
 import 'repository_providers.dart';
 import '../repositories/service_provider_repository.dart';
 
@@ -10,22 +11,28 @@ import '../repositories/service_provider_repository.dart';
 // List Providers
 // ============================================================================
 
-/// Provider for all service providers
+/// Provider for all service providers (profile-scoped)
 final serviceProvidersListProvider = FutureProvider<List<ServiceProvider>>((ref) async {
+  final profileId = ref.watch(currentProfileIdProvider).value;
+  if (profileId == null) return [];
   final repository = ref.watch(serviceProviderRepositoryProvider);
-  return await repository.getAllProviders();
+  return await repository.getProvidersByProfile(profileId);
 });
 
-/// Stream provider for real-time service provider updates
+/// Stream provider for real-time service provider updates (profile-scoped)
 final serviceProvidersStreamProvider = StreamProvider<List<ServiceProvider>>((ref) {
+  final profileId = ref.watch(currentProfileIdProvider).value;
+  if (profileId == null) return Stream.value([]);
   final repository = ref.watch(serviceProviderRepositoryProvider);
-  return repository.watchAllProviders();
+  return repository.watchProvidersByProfile(profileId);
 });
 
-/// Provider for top-rated providers
+/// Provider for top-rated providers (profile-scoped)
 final topRatedProvidersProvider = FutureProvider.family<List<ServiceProvider>, int>((ref, limit) async {
+  final profileId = ref.watch(currentProfileIdProvider).value;
+  if (profileId == null) return [];
   final repository = ref.watch(serviceProviderRepositoryProvider);
-  return await repository.getTopRatedProviders(limit: limit);
+  return await repository.getTopRatedProvidersByProfile(profileId, limit: limit);
 });
 
 /// Provider for highly rated providers (4.0+)

@@ -1,11 +1,27 @@
 import 'package:floor/floor.dart';
 import 'package:uuid/uuid.dart';
 
+import 'profile_model.dart';
+
 /// Represents a vehicle in the user's garage
-@Entity(tableName: 'vehicles')
+@Entity(
+  tableName: 'vehicles',
+  foreignKeys: [
+    ForeignKey(
+      childColumns: ['profileId'],
+      parentColumns: ['id'],
+      entity: Profile,
+      onDelete: ForeignKeyAction.cascade,
+    )
+  ],
+  indices: [Index(value: ['profileId'])],
+)
 class Vehicle {
   @PrimaryKey()
   final String id;
+
+  @ColumnInfo(name: 'profileId')
+  final String profileId;
 
   final String make;
   final String model;
@@ -22,6 +38,7 @@ class Vehicle {
 
   Vehicle({
     required this.id,
+    required this.profileId,
     required this.make,
     required this.model,
     required this.year,
@@ -38,6 +55,7 @@ class Vehicle {
 
   /// Factory constructor for creating new vehicles
   factory Vehicle.create({
+    required String profileId,
     required String make,
     required String model,
     required int year,
@@ -52,6 +70,7 @@ class Vehicle {
     final now = DateTime.now();
     return Vehicle(
       id: const Uuid().v4(),
+      profileId: profileId,
       make: make,
       model: model,
       year: year,
@@ -69,6 +88,7 @@ class Vehicle {
 
   /// Copy with method for updates
   Vehicle copyWith({
+    String? profileId,
     String? make,
     String? model,
     int? year,
@@ -82,6 +102,7 @@ class Vehicle {
   }) {
     return Vehicle(
       id: id,
+      profileId: profileId ?? this.profileId,
       make: make ?? this.make,
       model: model ?? this.model,
       year: year ?? this.year,
@@ -119,6 +140,7 @@ class Vehicle {
 
   /// Validation
   String? validate() {
+    if (profileId.trim().isEmpty) return 'Profile is required';
     if (make.trim().isEmpty) return 'Make is required';
     if (model.trim().isEmpty) return 'Model is required';
     if (year < 1900 || year > DateTime.now().year + 1) {

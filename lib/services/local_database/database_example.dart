@@ -18,8 +18,9 @@ class DatabaseExample {
   }
 
   /// Example: Add a new vehicle
-  Future<void> exampleAddVehicle() async {
+  Future<void> exampleAddVehicle(String profileId) async {
     final vehicle = Vehicle.create(
+      profileId: profileId,
       make: 'Toyota',
       model: 'Camry',
       year: 2020,
@@ -43,8 +44,8 @@ class DatabaseExample {
   }
 
   /// Example: Search vehicles
-  Future<void> exampleSearchVehicles(String query) async {
-    final results = await database.vehicleDao.searchVehicles(query);
+  Future<void> exampleSearchVehicles(String profileId, String query) async {
+    final results = await database.vehicleDao.searchVehicles(profileId, query);
     AppLogger.info('Search "$query" found ${results.length} results', tag: 'DatabaseExample');
   }
 
@@ -119,8 +120,9 @@ class DatabaseExample {
   }
 
   /// Example: Add service provider
-  Future<void> exampleAddServiceProvider() async {
+  Future<void> exampleAddServiceProvider(String profileId) async {
     final provider = ServiceProvider.create(
+      profileId: profileId,
       name: 'Quick Lube Auto',
       phone: '555-1234',
       email: 'info@quicklube.com',
@@ -201,9 +203,10 @@ class DatabaseExample {
   }
 
   /// Example: Complete workflow - Add vehicle with maintenance and reminders
-  Future<void> exampleCompleteWorkflow() async {
+  Future<void> exampleCompleteWorkflow(String profileId) async {
     // 1. Add a vehicle
     final vehicle = Vehicle.create(
+      profileId: profileId,
       make: 'Honda',
       model: 'Accord',
       year: 2021,
@@ -260,8 +263,14 @@ Future<void> runAllExamples() async {
     await example.init();
     AppLogger.info('Database initialized', tag: 'DatabaseExample');
 
-    // Run complete workflow example
-    await example.exampleCompleteWorkflow();
+    // Ensure we have a profile and run complete workflow example
+    var profiles = await example.database.profileDao.getAllProfiles();
+    if (profiles.isEmpty) {
+      final defaultProfile = Profile.create(name: 'Default');
+      await example.database.profileDao.insertProfile(defaultProfile);
+      profiles = [defaultProfile];
+    }
+    await example.exampleCompleteWorkflow(profiles.first.id);
     AppLogger.info('Complete workflow executed', tag: 'DatabaseExample');
 
     // Get all vehicles

@@ -1,21 +1,22 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/vehicle_model.dart';
+import 'profile_providers.dart';
 import 'repository_providers.dart';
 
-/// Provider for all vehicles list
-/// 
-/// Returns a list of all vehicles from the database.
+/// Provider for all vehicles list (profile-scoped)
 final vehiclesListProvider = FutureProvider<List<Vehicle>>((ref) async {
+  final profileId = ref.watch(currentProfileIdProvider).value;
+  if (profileId == null) return [];
   final repository = ref.watch(vehicleRepositoryProvider);
-  return await repository.getAllVehicles();
+  return await repository.getVehiclesByProfile(profileId);
 });
 
-/// Provider for vehicle count
-/// 
-/// Returns the total number of vehicles.
+/// Provider for vehicle count (profile-scoped)
 final vehicleCountProvider = FutureProvider<int>((ref) async {
+  final profileId = ref.watch(currentProfileIdProvider).value;
+  if (profileId == null) return 0;
   final repository = ref.watch(vehicleRepositoryProvider);
-  return await repository.getVehicleCount();
+  return (await repository.getVehiclesByProfile(profileId)).length;
 });
 
 /// Provider for a single vehicle by ID
@@ -26,12 +27,12 @@ final vehicleByIdProvider = FutureProvider.family<Vehicle?, String>((ref, id) as
   return await repository.getVehicleById(id);
 });
 
-/// Stream provider for all vehicles (reactive)
-/// 
-/// Automatically updates when vehicles change in the database.
+/// Stream provider for all vehicles (reactive, profile-scoped)
 final vehiclesStreamProvider = StreamProvider<List<Vehicle>>((ref) {
+  final profileId = ref.watch(currentProfileIdProvider).value;
+  if (profileId == null) return Stream.value([]);
   final repository = ref.watch(vehicleRepositoryProvider);
-  return repository.watchAllVehicles();
+  return repository.watchVehiclesByProfile(profileId);
 });
 
 /// Stream provider for a single vehicle by ID (reactive)

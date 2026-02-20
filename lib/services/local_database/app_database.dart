@@ -2,12 +2,14 @@ import 'dart:async';
 import 'package:floor/floor.dart';
 import 'package:sqflite/sqflite.dart' as sqflite;
 
+import '../../data/models/profile_model.dart';
 import '../../data/models/vehicle_model.dart';
 import '../../data/models/maintenance_record_model.dart';
 import '../../data/models/reminder_model.dart';
 import '../../data/models/service_provider_model.dart';
 import '../../data/models/document_model.dart';
 
+import 'daos/profile_dao.dart';
 import 'daos/vehicle_dao.dart';
 import 'daos/maintenance_record_dao.dart';
 import 'daos/reminder_dao.dart';
@@ -20,7 +22,8 @@ part 'app_database.g.dart'; // Generated file
 /// 
 /// This is the main database class that manages all local data storage
 /// using Floor (SQLite wrapper) for type-safe database operations.
-@Database(version: 1, entities: [
+@Database(version: 2, entities: [
+  Profile,
   Vehicle,
   MaintenanceRecord,
   Reminder,
@@ -28,6 +31,9 @@ part 'app_database.g.dart'; // Generated file
   Document,
 ])
 abstract class AppDatabase extends FloorDatabase {
+  /// Profile data access object
+  ProfileDao get profileDao;
+
   /// Vehicle data access object
   VehicleDao get vehicleDao;
 
@@ -52,10 +58,7 @@ class DatabaseBuilder {
   static Future<AppDatabase> build() async {
     return await $FloorAppDatabase
         .databaseBuilder(_databaseName)
-        .addMigrations([
-          // Add migrations here when schema changes
-          // Example: migration1to2,
-        ])
+        .addMigrations([_migration1to2])
         .addCallback(_callback)
         .build();
   }
@@ -76,6 +79,28 @@ class DatabaseBuilder {
     },
   );
 }
+
+/// Migration from version 1 to 2: Add profiles and profile scoping
+final _migration1to2 = Migration(1, 2, (database) async {
+  await database.execute('''
+    CREATE TABLE IF NOT EXISTS profiles (
+      id TEXT NOT NULL PRIMARY KEY,
+      name TEXT NOT NULL,
+      avatarPath TEXT,
+      createdAt INTEGER NOT NULL,
+      updatedAt INTEGER NOT NULL
+    )
+  ''');
+  await database.execute('ALTER TABLE vehicles ADD COLUMN profileId TEXT');
+  await database.execute('ALTER TABLE service_providers ADD COLUMN profileId TEXT');
+  const defaultProfileId = '00000000-0000-0000-0000-000000000001';
+  final now = DateTime.now().millisecondsSinceEpoch;
+  await database.execute(
+    "INSERT INTO profiles (id, name, avatarPath, createdAt, updatedAt) VALUES ('$defaultProfileId', 'Default', NULL, $now, $now)",
+  );
+  await database.execute("UPDATE vehicles SET profileId = '$defaultProfileId' WHERE profileId IS NULL");
+  await database.execute("UPDATE service_providers SET profileId = '$defaultProfileId' WHERE profileId IS NULL");
+});
 
 /// Example migration (for future use)
 /// 

@@ -8,6 +8,14 @@ abstract class VehicleDao {
   @Query('SELECT * FROM vehicles ORDER BY createdAt DESC')
   Future<List<Vehicle>> getAllVehicles();
 
+  /// Get vehicles by profile ID
+  @Query('SELECT * FROM vehicles WHERE profileId = :profileId ORDER BY createdAt DESC')
+  Future<List<Vehicle>> getVehiclesByProfileId(String profileId);
+
+  /// Watch vehicles by profile ID (reactive)
+  @Query('SELECT * FROM vehicles WHERE profileId = :profileId ORDER BY createdAt DESC')
+  Stream<List<Vehicle>> watchVehiclesByProfileId(String profileId);
+
   /// Get all vehicles as a stream for reactive updates
   @Query('SELECT * FROM vehicles ORDER BY createdAt DESC')
   Stream<List<Vehicle>> watchAllVehicles();
@@ -20,7 +28,18 @@ abstract class VehicleDao {
   @Query('SELECT * FROM vehicles WHERE id = :id')
   Stream<Vehicle?> watchVehicleById(String id);
 
-  /// Search vehicles by make, model, or year
+  /// Search vehicles by make, model, or year (within profile)
+  @Query('''
+    SELECT * FROM vehicles 
+    WHERE profileId = :profileId
+    AND (make LIKE '%' || :query || '%' 
+    OR model LIKE '%' || :query || '%' 
+    OR CAST(year AS TEXT) LIKE '%' || :query || '%')
+    ORDER BY createdAt DESC
+  ''')
+  Future<List<Vehicle>> searchVehicles(String profileId, String query);
+
+  /// Search all vehicles (legacy)
   @Query('''
     SELECT * FROM vehicles 
     WHERE make LIKE '%' || :query || '%' 
@@ -28,7 +47,7 @@ abstract class VehicleDao {
     OR CAST(year AS TEXT) LIKE '%' || :query || '%'
     ORDER BY createdAt DESC
   ''')
-  Future<List<Vehicle>> searchVehicles(String query);
+  Future<List<Vehicle>> searchAllVehicles(String query);
 
   /// Get vehicles by year range
   @Query('''
@@ -41,6 +60,10 @@ abstract class VehicleDao {
   /// Get total count of vehicles
   @Query('SELECT COUNT(*) FROM vehicles')
   Future<int?> getVehicleCount();
+
+  /// Get vehicle count by profile
+  @Query('SELECT COUNT(*) FROM vehicles WHERE profileId = :profileId')
+  Future<int?> getVehicleCountByProfile(String profileId);
 
   /// Insert a new vehicle
   @insert

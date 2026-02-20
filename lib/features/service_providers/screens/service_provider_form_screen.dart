@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../data/models/models.dart';
 import '../../../data/providers/service_provider_providers.dart';
+import '../../../data/providers/profile_providers.dart';
 import '../../../data/providers/repository_providers.dart';
 
 class ServiceProviderFormScreen extends ConsumerStatefulWidget {
@@ -431,6 +432,16 @@ class _ServiceProviderFormScreenState extends ConsumerState<ServiceProviderFormS
       final repository = ref.read(serviceProviderRepositoryProvider);
       final isEditing = widget.provider != null;
 
+      final profileId = ref.read(currentProfileIdProvider).value;
+      if (!isEditing && profileId == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Please select a profile first')),
+          );
+        }
+        return;
+      }
+
       final provider = isEditing
           ? widget.provider!.copyWith(
               name: _nameController.text.trim(),
@@ -443,6 +454,7 @@ class _ServiceProviderFormScreenState extends ConsumerState<ServiceProviderFormS
               specialties: _specialties,
             )
           : ServiceProvider.create(
+              profileId: profileId!,
               name: _nameController.text.trim(),
               phone: _phoneController.text.trim().isEmpty ? null : _phoneController.text.trim(),
               email: _emailController.text.trim().isEmpty ? null : _emailController.text.trim(),

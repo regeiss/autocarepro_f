@@ -23,6 +23,7 @@ import '../../service_providers/widgets/service_provider_list_tile.dart';
 import '../../service_providers/screens/service_provider_detail_screen.dart';
 import '../../service_providers/screens/service_providers_list_screen.dart';
 import '../../reports/screens/reports_screen.dart';
+import '../../profiles/screens/profiles_list_screen.dart';
 import '../../settings/screens/settings_screen.dart';
 
 /// Dashboard screen - Main entry point of the app
@@ -43,6 +44,17 @@ class DashboardScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('AutoCarePro'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.person),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const ProfilesListScreen(),
+                ),
+              );
+            },
+            tooltip: 'Profiles',
+          ),
           IconButton(
             icon: const Icon(Icons.settings),
             onPressed: () {

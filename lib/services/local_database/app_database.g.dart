@@ -72,6 +72,8 @@ class _$AppDatabase extends AppDatabase {
     changeListener = listener ?? StreamController<String>.broadcast();
   }
 
+  ProfileDao? _profileDaoInstance;
+
   VehicleDao? _vehicleDaoInstance;
 
   MaintenanceRecordDao? _maintenanceRecordDaoInstance;
@@ -88,7 +90,7 @@ class _$AppDatabase extends AppDatabase {
     Callback? callback,
   ]) async {
     final databaseOptions = sqflite.OpenDatabaseOptions(
-      version: 1,
+      version: 2,
       onConfigure: (database) async {
         await database.execute('PRAGMA foreign_keys = ON');
         await callback?.onConfigure?.call(database);
@@ -104,15 +106,19 @@ class _$AppDatabase extends AppDatabase {
       },
       onCreate: (database, version) async {
         await database.execute(
-            'CREATE TABLE IF NOT EXISTS `vehicles` (`id` TEXT NOT NULL, `make` TEXT NOT NULL, `model` TEXT NOT NULL, `year` INTEGER NOT NULL, `vin` TEXT, `licensePlate` TEXT, `currentMileage` REAL, `mileageUnit` TEXT NOT NULL, `purchaseDate` INTEGER, `photoPath` TEXT, `notes` TEXT, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, PRIMARY KEY (`id`))');
+            'CREATE TABLE IF NOT EXISTS `profiles` (`id` TEXT NOT NULL, `name` TEXT NOT NULL, `avatarPath` TEXT, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, PRIMARY KEY (`id`))');
+        await database.execute(
+            'CREATE TABLE IF NOT EXISTS `vehicles` (`id` TEXT NOT NULL, `profileId` TEXT NOT NULL, `make` TEXT NOT NULL, `model` TEXT NOT NULL, `year` INTEGER NOT NULL, `vin` TEXT, `licensePlate` TEXT, `currentMileage` REAL, `mileageUnit` TEXT NOT NULL, `purchaseDate` INTEGER, `photoPath` TEXT, `notes` TEXT, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, FOREIGN KEY (`profileId`) REFERENCES `profiles` (`id`) ON UPDATE NO ACTION ON DELETE CASCADE, PRIMARY KEY (`id`))');
         await database.execute(
             'CREATE TABLE IF NOT EXISTS `maintenance_records` (`id` TEXT NOT NULL, `vehicleId` TEXT NOT NULL, `serviceType` TEXT NOT NULL, `serviceDate` INTEGER NOT NULL, `mileage` REAL, `cost` REAL, `currency` TEXT NOT NULL, `serviceProvider` TEXT, `serviceProviderId` TEXT, `description` TEXT, `notes` TEXT, `receiptPhotoPath` TEXT, `partsReplacedJson` TEXT, `nextServiceDue` INTEGER, `nextServiceMileage` REAL, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, FOREIGN KEY (`vehicleId`) REFERENCES `vehicles` (`id`) ON UPDATE NO ACTION ON DELETE CASCADE, PRIMARY KEY (`id`))');
         await database.execute(
             'CREATE TABLE IF NOT EXISTS `reminders` (`id` TEXT NOT NULL, `vehicleId` TEXT NOT NULL, `serviceType` TEXT NOT NULL, `reminderType` TEXT NOT NULL, `intervalValue` INTEGER NOT NULL, `intervalUnit` TEXT NOT NULL, `lastServiceDate` INTEGER, `lastServiceMileage` REAL, `nextReminderDate` INTEGER, `nextReminderMileage` REAL, `isActive` INTEGER NOT NULL, `notifyBefore` INTEGER NOT NULL, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, FOREIGN KEY (`vehicleId`) REFERENCES `vehicles` (`id`) ON UPDATE NO ACTION ON DELETE CASCADE, PRIMARY KEY (`id`))');
         await database.execute(
-            'CREATE TABLE IF NOT EXISTS `service_providers` (`id` TEXT NOT NULL, `name` TEXT NOT NULL, `phone` TEXT, `email` TEXT, `address` TEXT, `website` TEXT, `notes` TEXT, `rating` REAL, `specialtiesJson` TEXT, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, PRIMARY KEY (`id`))');
+            'CREATE TABLE IF NOT EXISTS `service_providers` (`id` TEXT NOT NULL, `profileId` TEXT NOT NULL, `name` TEXT NOT NULL, `phone` TEXT, `email` TEXT, `address` TEXT, `website` TEXT, `notes` TEXT, `rating` REAL, `specialtiesJson` TEXT, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, PRIMARY KEY (`id`))');
         await database.execute(
             'CREATE TABLE IF NOT EXISTS `documents` (`id` TEXT NOT NULL, `vehicleId` TEXT NOT NULL, `documentType` TEXT NOT NULL, `filePath` TEXT NOT NULL, `title` TEXT, `description` TEXT, `fileSize` INTEGER, `mimeType` TEXT, `createdAt` INTEGER NOT NULL, FOREIGN KEY (`vehicleId`) REFERENCES `vehicles` (`id`) ON UPDATE NO ACTION ON DELETE CASCADE, PRIMARY KEY (`id`))');
+        await database.execute(
+            'CREATE INDEX `index_vehicles_profileId` ON `vehicles` (`profileId`)');
         await database.execute(
             'CREATE INDEX `index_maintenance_records_vehicleId` ON `maintenance_records` (`vehicleId`)');
         await database.execute(
@@ -124,6 +130,8 @@ class _$AppDatabase extends AppDatabase {
         await database.execute(
             'CREATE INDEX `index_service_providers_name` ON `service_providers` (`name`)');
         await database.execute(
+            'CREATE INDEX `index_service_providers_profileId` ON `service_providers` (`profileId`)');
+        await database.execute(
             'CREATE INDEX `index_documents_vehicleId` ON `documents` (`vehicleId`)');
         await database.execute(
             'CREATE INDEX `index_documents_documentType` ON `documents` (`documentType`)');
@@ -132,6 +140,11 @@ class _$AppDatabase extends AppDatabase {
       },
     );
     return sqfliteDatabaseFactory.openDatabase(path, options: databaseOptions);
+  }
+
+  @override
+  ProfileDao get profileDao {
+    return _profileDaoInstance ??= _$ProfileDao(database, changeListener);
   }
 
   @override
@@ -162,6 +175,138 @@ class _$AppDatabase extends AppDatabase {
   }
 }
 
+class _$ProfileDao extends ProfileDao {
+  _$ProfileDao(
+    this.database,
+    this.changeListener,
+  )   : _queryAdapter = QueryAdapter(database, changeListener),
+        _profileInsertionAdapter = InsertionAdapter(
+            database,
+            'profiles',
+            (Profile item) => <String, Object?>{
+                  'id': item.id,
+                  'name': item.name,
+                  'avatarPath': item.avatarPath,
+                  'createdAt': item.createdAt,
+                  'updatedAt': item.updatedAt
+                },
+            changeListener),
+        _profileUpdateAdapter = UpdateAdapter(
+            database,
+            'profiles',
+            ['id'],
+            (Profile item) => <String, Object?>{
+                  'id': item.id,
+                  'name': item.name,
+                  'avatarPath': item.avatarPath,
+                  'createdAt': item.createdAt,
+                  'updatedAt': item.updatedAt
+                },
+            changeListener),
+        _profileDeletionAdapter = DeletionAdapter(
+            database,
+            'profiles',
+            ['id'],
+            (Profile item) => <String, Object?>{
+                  'id': item.id,
+                  'name': item.name,
+                  'avatarPath': item.avatarPath,
+                  'createdAt': item.createdAt,
+                  'updatedAt': item.updatedAt
+                },
+            changeListener);
+
+  final sqflite.DatabaseExecutor database;
+
+  final StreamController<String> changeListener;
+
+  final QueryAdapter _queryAdapter;
+
+  final InsertionAdapter<Profile> _profileInsertionAdapter;
+
+  final UpdateAdapter<Profile> _profileUpdateAdapter;
+
+  final DeletionAdapter<Profile> _profileDeletionAdapter;
+
+  @override
+  Future<List<Profile>> getAllProfiles() async {
+    return _queryAdapter.queryList('SELECT * FROM profiles ORDER BY name ASC',
+        mapper: (Map<String, Object?> row) => Profile(
+            id: row['id'] as String,
+            name: row['name'] as String,
+            avatarPath: row['avatarPath'] as String?,
+            createdAt: row['createdAt'] as int,
+            updatedAt: row['updatedAt'] as int));
+  }
+
+  @override
+  Stream<List<Profile>> watchAllProfiles() {
+    return _queryAdapter.queryListStream(
+        'SELECT * FROM profiles ORDER BY name ASC',
+        mapper: (Map<String, Object?> row) => Profile(
+            id: row['id'] as String,
+            name: row['name'] as String,
+            avatarPath: row['avatarPath'] as String?,
+            createdAt: row['createdAt'] as int,
+            updatedAt: row['updatedAt'] as int),
+        queryableName: 'profiles',
+        isView: false);
+  }
+
+  @override
+  Future<Profile?> getProfileById(String id) async {
+    return _queryAdapter.query('SELECT * FROM profiles WHERE id = ?1',
+        mapper: (Map<String, Object?> row) => Profile(
+            id: row['id'] as String,
+            name: row['name'] as String,
+            avatarPath: row['avatarPath'] as String?,
+            createdAt: row['createdAt'] as int,
+            updatedAt: row['updatedAt'] as int),
+        arguments: [id]);
+  }
+
+  @override
+  Stream<Profile?> watchProfileById(String id) {
+    return _queryAdapter.queryStream('SELECT * FROM profiles WHERE id = ?1',
+        mapper: (Map<String, Object?> row) => Profile(
+            id: row['id'] as String,
+            name: row['name'] as String,
+            avatarPath: row['avatarPath'] as String?,
+            createdAt: row['createdAt'] as int,
+            updatedAt: row['updatedAt'] as int),
+        arguments: [id],
+        queryableName: 'profiles',
+        isView: false);
+  }
+
+  @override
+  Future<int?> getProfileCount() async {
+    return _queryAdapter.query('SELECT COUNT(*) FROM profiles',
+        mapper: (Map<String, Object?> row) => row.values.first as int);
+  }
+
+  @override
+  Future<void> deleteProfileById(String id) async {
+    await _queryAdapter
+        .queryNoReturn('DELETE FROM profiles WHERE id = ?1', arguments: [id]);
+  }
+
+  @override
+  Future<void> insertProfile(Profile profile) async {
+    await _profileInsertionAdapter.insert(profile, OnConflictStrategy.abort);
+  }
+
+  @override
+  Future<void> updateProfile(Profile profile) async {
+    await _profileUpdateAdapter.update(profile, OnConflictStrategy.abort);
+  }
+
+  @override
+  Future<void> deleteProfile(Profile profile) async {
+    await _profileDeletionAdapter.delete(profile);
+  }
+}
+
 class _$VehicleDao extends VehicleDao {
   _$VehicleDao(
     this.database,
@@ -172,6 +317,7 @@ class _$VehicleDao extends VehicleDao {
             'vehicles',
             (Vehicle item) => <String, Object?>{
                   'id': item.id,
+                  'profileId': item.profileId,
                   'make': item.make,
                   'model': item.model,
                   'year': item.year,
@@ -192,6 +338,7 @@ class _$VehicleDao extends VehicleDao {
             ['id'],
             (Vehicle item) => <String, Object?>{
                   'id': item.id,
+                  'profileId': item.profileId,
                   'make': item.make,
                   'model': item.model,
                   'year': item.year,
@@ -212,6 +359,7 @@ class _$VehicleDao extends VehicleDao {
             ['id'],
             (Vehicle item) => <String, Object?>{
                   'id': item.id,
+                  'profileId': item.profileId,
                   'make': item.make,
                   'model': item.model,
                   'year': item.year,
@@ -245,6 +393,7 @@ class _$VehicleDao extends VehicleDao {
         'SELECT * FROM vehicles ORDER BY createdAt DESC',
         mapper: (Map<String, Object?> row) => Vehicle(
             id: row['id'] as String,
+            profileId: row['profileId'] as String,
             make: row['make'] as String,
             model: row['model'] as String,
             year: row['year'] as int,
@@ -260,11 +409,58 @@ class _$VehicleDao extends VehicleDao {
   }
 
   @override
+  Future<List<Vehicle>> getVehiclesByProfileId(String profileId) async {
+    return _queryAdapter.queryList(
+        'SELECT * FROM vehicles WHERE profileId = ?1 ORDER BY createdAt DESC',
+        mapper: (Map<String, Object?> row) => Vehicle(
+            id: row['id'] as String,
+            profileId: row['profileId'] as String,
+            make: row['make'] as String,
+            model: row['model'] as String,
+            year: row['year'] as int,
+            vin: row['vin'] as String?,
+            licensePlate: row['licensePlate'] as String?,
+            currentMileage: row['currentMileage'] as double?,
+            mileageUnit: row['mileageUnit'] as String,
+            purchaseDate: row['purchaseDate'] as int?,
+            photoPath: row['photoPath'] as String?,
+            notes: row['notes'] as String?,
+            createdAt: row['createdAt'] as int,
+            updatedAt: row['updatedAt'] as int),
+        arguments: [profileId]);
+  }
+
+  @override
+  Stream<List<Vehicle>> watchVehiclesByProfileId(String profileId) {
+    return _queryAdapter.queryListStream(
+        'SELECT * FROM vehicles WHERE profileId = ?1 ORDER BY createdAt DESC',
+        mapper: (Map<String, Object?> row) => Vehicle(
+            id: row['id'] as String,
+            profileId: row['profileId'] as String,
+            make: row['make'] as String,
+            model: row['model'] as String,
+            year: row['year'] as int,
+            vin: row['vin'] as String?,
+            licensePlate: row['licensePlate'] as String?,
+            currentMileage: row['currentMileage'] as double?,
+            mileageUnit: row['mileageUnit'] as String,
+            purchaseDate: row['purchaseDate'] as int?,
+            photoPath: row['photoPath'] as String?,
+            notes: row['notes'] as String?,
+            createdAt: row['createdAt'] as int,
+            updatedAt: row['updatedAt'] as int),
+        arguments: [profileId],
+        queryableName: 'vehicles',
+        isView: false);
+  }
+
+  @override
   Stream<List<Vehicle>> watchAllVehicles() {
     return _queryAdapter.queryListStream(
         'SELECT * FROM vehicles ORDER BY createdAt DESC',
         mapper: (Map<String, Object?> row) => Vehicle(
             id: row['id'] as String,
+            profileId: row['profileId'] as String,
             make: row['make'] as String,
             model: row['model'] as String,
             year: row['year'] as int,
@@ -286,6 +482,7 @@ class _$VehicleDao extends VehicleDao {
     return _queryAdapter.query('SELECT * FROM vehicles WHERE id = ?1',
         mapper: (Map<String, Object?> row) => Vehicle(
             id: row['id'] as String,
+            profileId: row['profileId'] as String,
             make: row['make'] as String,
             model: row['model'] as String,
             year: row['year'] as int,
@@ -306,6 +503,7 @@ class _$VehicleDao extends VehicleDao {
     return _queryAdapter.queryStream('SELECT * FROM vehicles WHERE id = ?1',
         mapper: (Map<String, Object?> row) => Vehicle(
             id: row['id'] as String,
+            profileId: row['profileId'] as String,
             make: row['make'] as String,
             model: row['model'] as String,
             year: row['year'] as int,
@@ -324,10 +522,21 @@ class _$VehicleDao extends VehicleDao {
   }
 
   @override
-  Future<List<Vehicle>> searchVehicles(String query) async {
+  Future<List<Vehicle>> searchVehicles(
+    String profileId,
+    String query,
+  ) async {
+    return _queryAdapter.queryList(
+        'SELECT * FROM vehicles      WHERE profileId = ?1     AND (make LIKE \'%\' || ?2 || \'%\'      OR model LIKE \'%\' || ?2 || \'%\'      OR CAST(year AS TEXT) LIKE \'%\' || ?2 || \'%\')     ORDER BY createdAt DESC',
+        mapper: (Map<String, Object?> row) => Vehicle(id: row['id'] as String, profileId: row['profileId'] as String, make: row['make'] as String, model: row['model'] as String, year: row['year'] as int, vin: row['vin'] as String?, licensePlate: row['licensePlate'] as String?, currentMileage: row['currentMileage'] as double?, mileageUnit: row['mileageUnit'] as String, purchaseDate: row['purchaseDate'] as int?, photoPath: row['photoPath'] as String?, notes: row['notes'] as String?, createdAt: row['createdAt'] as int, updatedAt: row['updatedAt'] as int),
+        arguments: [profileId, query]);
+  }
+
+  @override
+  Future<List<Vehicle>> searchAllVehicles(String query) async {
     return _queryAdapter.queryList(
         'SELECT * FROM vehicles      WHERE make LIKE \'%\' || ?1 || \'%\'      OR model LIKE \'%\' || ?1 || \'%\'      OR CAST(year AS TEXT) LIKE \'%\' || ?1 || \'%\'     ORDER BY createdAt DESC',
-        mapper: (Map<String, Object?> row) => Vehicle(id: row['id'] as String, make: row['make'] as String, model: row['model'] as String, year: row['year'] as int, vin: row['vin'] as String?, licensePlate: row['licensePlate'] as String?, currentMileage: row['currentMileage'] as double?, mileageUnit: row['mileageUnit'] as String, purchaseDate: row['purchaseDate'] as int?, photoPath: row['photoPath'] as String?, notes: row['notes'] as String?, createdAt: row['createdAt'] as int, updatedAt: row['updatedAt'] as int),
+        mapper: (Map<String, Object?> row) => Vehicle(id: row['id'] as String, profileId: row['profileId'] as String, make: row['make'] as String, model: row['model'] as String, year: row['year'] as int, vin: row['vin'] as String?, licensePlate: row['licensePlate'] as String?, currentMileage: row['currentMileage'] as double?, mileageUnit: row['mileageUnit'] as String, purchaseDate: row['purchaseDate'] as int?, photoPath: row['photoPath'] as String?, notes: row['notes'] as String?, createdAt: row['createdAt'] as int, updatedAt: row['updatedAt'] as int),
         arguments: [query]);
   }
 
@@ -338,7 +547,7 @@ class _$VehicleDao extends VehicleDao {
   ) async {
     return _queryAdapter.queryList(
         'SELECT * FROM vehicles      WHERE year BETWEEN ?1 AND ?2     ORDER BY year DESC',
-        mapper: (Map<String, Object?> row) => Vehicle(id: row['id'] as String, make: row['make'] as String, model: row['model'] as String, year: row['year'] as int, vin: row['vin'] as String?, licensePlate: row['licensePlate'] as String?, currentMileage: row['currentMileage'] as double?, mileageUnit: row['mileageUnit'] as String, purchaseDate: row['purchaseDate'] as int?, photoPath: row['photoPath'] as String?, notes: row['notes'] as String?, createdAt: row['createdAt'] as int, updatedAt: row['updatedAt'] as int),
+        mapper: (Map<String, Object?> row) => Vehicle(id: row['id'] as String, profileId: row['profileId'] as String, make: row['make'] as String, model: row['model'] as String, year: row['year'] as int, vin: row['vin'] as String?, licensePlate: row['licensePlate'] as String?, currentMileage: row['currentMileage'] as double?, mileageUnit: row['mileageUnit'] as String, purchaseDate: row['purchaseDate'] as int?, photoPath: row['photoPath'] as String?, notes: row['notes'] as String?, createdAt: row['createdAt'] as int, updatedAt: row['updatedAt'] as int),
         arguments: [startYear, endYear]);
   }
 
@@ -346,6 +555,14 @@ class _$VehicleDao extends VehicleDao {
   Future<int?> getVehicleCount() async {
     return _queryAdapter.query('SELECT COUNT(*) FROM vehicles',
         mapper: (Map<String, Object?> row) => row.values.first as int);
+  }
+
+  @override
+  Future<int?> getVehicleCountByProfile(String profileId) async {
+    return _queryAdapter.query(
+        'SELECT COUNT(*) FROM vehicles WHERE profileId = ?1',
+        mapper: (Map<String, Object?> row) => row.values.first as int,
+        arguments: [profileId]);
   }
 
   @override
@@ -1011,7 +1228,7 @@ class _$ReminderDao extends ReminderDao {
   @override
   Future<List<Reminder>> getTimeBasedReminders() async {
     return _queryAdapter.queryList(
-        'SELECT * FROM reminders WHERE reminderType = "time" AND isActive = 1 ORDER BY nextReminderDate ASC',
+        'SELECT * FROM reminders WHERE reminderType = \"time\" AND isActive = 1 ORDER BY nextReminderDate ASC',
         mapper: (Map<String, Object?> row) => Reminder(
             id: row['id'] as String,
             vehicleId: row['vehicleId'] as String,
@@ -1032,7 +1249,7 @@ class _$ReminderDao extends ReminderDao {
   @override
   Future<List<Reminder>> getMileageBasedReminders() async {
     return _queryAdapter.queryList(
-        'SELECT * FROM reminders WHERE reminderType = "mileage" AND isActive = 1 ORDER BY nextReminderMileage ASC',
+        'SELECT * FROM reminders WHERE reminderType = \"mileage\" AND isActive = 1 ORDER BY nextReminderMileage ASC',
         mapper: (Map<String, Object?> row) => Reminder(
             id: row['id'] as String,
             vehicleId: row['vehicleId'] as String,
@@ -1054,7 +1271,7 @@ class _$ReminderDao extends ReminderDao {
   Future<List<Reminder>> getMileageBasedRemindersByVehicle(
       String vehicleId) async {
     return _queryAdapter.queryList(
-        'SELECT * FROM reminders      WHERE vehicleId = ?1      AND reminderType = "mileage"      AND isActive = 1      ORDER BY nextReminderMileage ASC',
+        'SELECT * FROM reminders      WHERE vehicleId = ?1      AND reminderType = \"mileage\"      AND isActive = 1      ORDER BY nextReminderMileage ASC',
         mapper: (Map<String, Object?> row) => Reminder(id: row['id'] as String, vehicleId: row['vehicleId'] as String, serviceType: row['serviceType'] as String, reminderType: row['reminderType'] as String, intervalValue: row['intervalValue'] as int, intervalUnit: row['intervalUnit'] as String, lastServiceDate: row['lastServiceDate'] as int?, lastServiceMileage: row['lastServiceMileage'] as double?, nextReminderDate: row['nextReminderDate'] as int?, nextReminderMileage: row['nextReminderMileage'] as double?, isActive: (row['isActive'] as int) != 0, notifyBefore: row['notifyBefore'] as int, createdAt: row['createdAt'] as int, updatedAt: row['updatedAt'] as int),
         arguments: [vehicleId]);
   }
@@ -1062,7 +1279,7 @@ class _$ReminderDao extends ReminderDao {
   @override
   Future<List<Reminder>> getDueTimeReminders(int currentTime) async {
     return _queryAdapter.queryList(
-        'SELECT * FROM reminders      WHERE reminderType = "time"      AND isActive = 1      AND nextReminderDate IS NOT NULL      AND nextReminderDate <= ?1     ORDER BY nextReminderDate ASC',
+        'SELECT * FROM reminders      WHERE reminderType = \"time\"      AND isActive = 1      AND nextReminderDate IS NOT NULL      AND nextReminderDate <= ?1     ORDER BY nextReminderDate ASC',
         mapper: (Map<String, Object?> row) => Reminder(id: row['id'] as String, vehicleId: row['vehicleId'] as String, serviceType: row['serviceType'] as String, reminderType: row['reminderType'] as String, intervalValue: row['intervalValue'] as int, intervalUnit: row['intervalUnit'] as String, lastServiceDate: row['lastServiceDate'] as int?, lastServiceMileage: row['lastServiceMileage'] as double?, nextReminderDate: row['nextReminderDate'] as int?, nextReminderMileage: row['nextReminderMileage'] as double?, isActive: (row['isActive'] as int) != 0, notifyBefore: row['notifyBefore'] as int, createdAt: row['createdAt'] as int, updatedAt: row['updatedAt'] as int),
         arguments: [currentTime]);
   }
@@ -1073,7 +1290,7 @@ class _$ReminderDao extends ReminderDao {
     int futureTime,
   ) async {
     return _queryAdapter.queryList(
-        'SELECT * FROM reminders      WHERE reminderType = "time"      AND isActive = 1      AND nextReminderDate IS NOT NULL      AND nextReminderDate BETWEEN ?1 AND ?2     ORDER BY nextReminderDate ASC',
+        'SELECT * FROM reminders      WHERE reminderType = \"time\"      AND isActive = 1      AND nextReminderDate IS NOT NULL      AND nextReminderDate BETWEEN ?1 AND ?2     ORDER BY nextReminderDate ASC',
         mapper: (Map<String, Object?> row) => Reminder(id: row['id'] as String, vehicleId: row['vehicleId'] as String, serviceType: row['serviceType'] as String, reminderType: row['reminderType'] as String, intervalValue: row['intervalValue'] as int, intervalUnit: row['intervalUnit'] as String, lastServiceDate: row['lastServiceDate'] as int?, lastServiceMileage: row['lastServiceMileage'] as double?, nextReminderDate: row['nextReminderDate'] as int?, nextReminderMileage: row['nextReminderMileage'] as double?, isActive: (row['isActive'] as int) != 0, notifyBefore: row['notifyBefore'] as int, createdAt: row['createdAt'] as int, updatedAt: row['updatedAt'] as int),
         arguments: [currentTime, futureTime]);
   }
@@ -1193,6 +1410,7 @@ class _$ServiceProviderDao extends ServiceProviderDao {
             'service_providers',
             (ServiceProvider item) => <String, Object?>{
                   'id': item.id,
+                  'profileId': item.profileId,
                   'name': item.name,
                   'phone': item.phone,
                   'email': item.email,
@@ -1211,6 +1429,7 @@ class _$ServiceProviderDao extends ServiceProviderDao {
             ['id'],
             (ServiceProvider item) => <String, Object?>{
                   'id': item.id,
+                  'profileId': item.profileId,
                   'name': item.name,
                   'phone': item.phone,
                   'email': item.email,
@@ -1229,6 +1448,7 @@ class _$ServiceProviderDao extends ServiceProviderDao {
             ['id'],
             (ServiceProvider item) => <String, Object?>{
                   'id': item.id,
+                  'profileId': item.profileId,
                   'name': item.name,
                   'phone': item.phone,
                   'email': item.email,
@@ -1260,6 +1480,7 @@ class _$ServiceProviderDao extends ServiceProviderDao {
         'SELECT * FROM service_providers ORDER BY name ASC',
         mapper: (Map<String, Object?> row) => ServiceProvider(
             id: row['id'] as String,
+            profileId: row['profileId'] as String,
             name: row['name'] as String,
             phone: row['phone'] as String?,
             email: row['email'] as String?,
@@ -1273,11 +1494,43 @@ class _$ServiceProviderDao extends ServiceProviderDao {
   }
 
   @override
+  Future<List<ServiceProvider>> getProvidersByProfileId(
+      String profileId) async {
+    return _queryAdapter.queryList(
+        'SELECT * FROM service_providers WHERE profileId = ?1 ORDER BY name ASC',
+        mapper: (Map<String, Object?> row) => ServiceProvider(id: row['id'] as String, profileId: row['profileId'] as String, name: row['name'] as String, phone: row['phone'] as String?, email: row['email'] as String?, address: row['address'] as String?, website: row['website'] as String?, notes: row['notes'] as String?, rating: row['rating'] as double?, specialtiesJson: row['specialtiesJson'] as String?, createdAt: row['createdAt'] as int, updatedAt: row['updatedAt'] as int),
+        arguments: [profileId]);
+  }
+
+  @override
+  Stream<List<ServiceProvider>> watchProvidersByProfileId(String profileId) {
+    return _queryAdapter.queryListStream(
+        'SELECT * FROM service_providers WHERE profileId = ?1 ORDER BY name ASC',
+        mapper: (Map<String, Object?> row) => ServiceProvider(
+            id: row['id'] as String,
+            profileId: row['profileId'] as String,
+            name: row['name'] as String,
+            phone: row['phone'] as String?,
+            email: row['email'] as String?,
+            address: row['address'] as String?,
+            website: row['website'] as String?,
+            notes: row['notes'] as String?,
+            rating: row['rating'] as double?,
+            specialtiesJson: row['specialtiesJson'] as String?,
+            createdAt: row['createdAt'] as int,
+            updatedAt: row['updatedAt'] as int),
+        arguments: [profileId],
+        queryableName: 'service_providers',
+        isView: false);
+  }
+
+  @override
   Stream<List<ServiceProvider>> watchAllProviders() {
     return _queryAdapter.queryListStream(
         'SELECT * FROM service_providers ORDER BY name ASC',
         mapper: (Map<String, Object?> row) => ServiceProvider(
             id: row['id'] as String,
+            profileId: row['profileId'] as String,
             name: row['name'] as String,
             phone: row['phone'] as String?,
             email: row['email'] as String?,
@@ -1297,6 +1550,7 @@ class _$ServiceProviderDao extends ServiceProviderDao {
     return _queryAdapter.query('SELECT * FROM service_providers WHERE id = ?1',
         mapper: (Map<String, Object?> row) => ServiceProvider(
             id: row['id'] as String,
+            profileId: row['profileId'] as String,
             name: row['name'] as String,
             phone: row['phone'] as String?,
             email: row['email'] as String?,
@@ -1316,6 +1570,7 @@ class _$ServiceProviderDao extends ServiceProviderDao {
         'SELECT * FROM service_providers WHERE id = ?1',
         mapper: (Map<String, Object?> row) => ServiceProvider(
             id: row['id'] as String,
+            profileId: row['profileId'] as String,
             name: row['name'] as String,
             phone: row['phone'] as String?,
             email: row['email'] as String?,
@@ -1335,7 +1590,7 @@ class _$ServiceProviderDao extends ServiceProviderDao {
   Future<List<ServiceProvider>> searchProviders(String query) async {
     return _queryAdapter.queryList(
         'SELECT * FROM service_providers      WHERE name LIKE \'%\' || ?1 || \'%\'     ORDER BY name ASC',
-        mapper: (Map<String, Object?> row) => ServiceProvider(id: row['id'] as String, name: row['name'] as String, phone: row['phone'] as String?, email: row['email'] as String?, address: row['address'] as String?, website: row['website'] as String?, notes: row['notes'] as String?, rating: row['rating'] as double?, specialtiesJson: row['specialtiesJson'] as String?, createdAt: row['createdAt'] as int, updatedAt: row['updatedAt'] as int),
+        mapper: (Map<String, Object?> row) => ServiceProvider(id: row['id'] as String, profileId: row['profileId'] as String, name: row['name'] as String, phone: row['phone'] as String?, email: row['email'] as String?, address: row['address'] as String?, website: row['website'] as String?, notes: row['notes'] as String?, rating: row['rating'] as double?, specialtiesJson: row['specialtiesJson'] as String?, createdAt: row['createdAt'] as int, updatedAt: row['updatedAt'] as int),
         arguments: [query]);
   }
 
@@ -1344,7 +1599,7 @@ class _$ServiceProviderDao extends ServiceProviderDao {
       double minRating) async {
     return _queryAdapter.queryList(
         'SELECT * FROM service_providers      WHERE rating IS NOT NULL      AND rating >= ?1     ORDER BY rating DESC, name ASC',
-        mapper: (Map<String, Object?> row) => ServiceProvider(id: row['id'] as String, name: row['name'] as String, phone: row['phone'] as String?, email: row['email'] as String?, address: row['address'] as String?, website: row['website'] as String?, notes: row['notes'] as String?, rating: row['rating'] as double?, specialtiesJson: row['specialtiesJson'] as String?, createdAt: row['createdAt'] as int, updatedAt: row['updatedAt'] as int),
+        mapper: (Map<String, Object?> row) => ServiceProvider(id: row['id'] as String, profileId: row['profileId'] as String, name: row['name'] as String, phone: row['phone'] as String?, email: row['email'] as String?, address: row['address'] as String?, website: row['website'] as String?, notes: row['notes'] as String?, rating: row['rating'] as double?, specialtiesJson: row['specialtiesJson'] as String?, createdAt: row['createdAt'] as int, updatedAt: row['updatedAt'] as int),
         arguments: [minRating]);
   }
 
@@ -1352,8 +1607,19 @@ class _$ServiceProviderDao extends ServiceProviderDao {
   Future<List<ServiceProvider>> getTopRatedProviders(int limit) async {
     return _queryAdapter.queryList(
         'SELECT * FROM service_providers      WHERE rating IS NOT NULL      ORDER BY rating DESC, name ASC     LIMIT ?1',
-        mapper: (Map<String, Object?> row) => ServiceProvider(id: row['id'] as String, name: row['name'] as String, phone: row['phone'] as String?, email: row['email'] as String?, address: row['address'] as String?, website: row['website'] as String?, notes: row['notes'] as String?, rating: row['rating'] as double?, specialtiesJson: row['specialtiesJson'] as String?, createdAt: row['createdAt'] as int, updatedAt: row['updatedAt'] as int),
+        mapper: (Map<String, Object?> row) => ServiceProvider(id: row['id'] as String, profileId: row['profileId'] as String, name: row['name'] as String, phone: row['phone'] as String?, email: row['email'] as String?, address: row['address'] as String?, website: row['website'] as String?, notes: row['notes'] as String?, rating: row['rating'] as double?, specialtiesJson: row['specialtiesJson'] as String?, createdAt: row['createdAt'] as int, updatedAt: row['updatedAt'] as int),
         arguments: [limit]);
+  }
+
+  @override
+  Future<List<ServiceProvider>> getTopRatedProvidersByProfile(
+    String profileId,
+    int limit,
+  ) async {
+    return _queryAdapter.queryList(
+        'SELECT * FROM service_providers      WHERE profileId = ?1 AND rating IS NOT NULL      ORDER BY rating DESC, name ASC     LIMIT ?2',
+        mapper: (Map<String, Object?> row) => ServiceProvider(id: row['id'] as String, profileId: row['profileId'] as String, name: row['name'] as String, phone: row['phone'] as String?, email: row['email'] as String?, address: row['address'] as String?, website: row['website'] as String?, notes: row['notes'] as String?, rating: row['rating'] as double?, specialtiesJson: row['specialtiesJson'] as String?, createdAt: row['createdAt'] as int, updatedAt: row['updatedAt'] as int),
+        arguments: [profileId, limit]);
   }
 
   @override
@@ -1362,6 +1628,7 @@ class _$ServiceProviderDao extends ServiceProviderDao {
         'SELECT * FROM service_providers      WHERE rating IS NULL     ORDER BY name ASC',
         mapper: (Map<String, Object?> row) => ServiceProvider(
             id: row['id'] as String,
+            profileId: row['profileId'] as String,
             name: row['name'] as String,
             phone: row['phone'] as String?,
             email: row['email'] as String?,
@@ -1408,6 +1675,13 @@ class _$ServiceProviderDao extends ServiceProviderDao {
   @override
   Future<void> deleteAllProviders() async {
     await _queryAdapter.queryNoReturn('DELETE FROM service_providers');
+  }
+
+  @override
+  Future<void> deleteByProfileId(String profileId) async {
+    await _queryAdapter.queryNoReturn(
+        'DELETE FROM service_providers WHERE profileId = ?1',
+        arguments: [profileId]);
   }
 
   @override

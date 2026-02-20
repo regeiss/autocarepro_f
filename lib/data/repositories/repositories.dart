@@ -2,6 +2,7 @@
 // 
 // Usage: import 'package:autocarepro/data/repositories/repositories.dart';
 
+export 'profile_repository.dart';
 export 'vehicle_repository.dart';
 export 'maintenance_repository.dart';
 export 'reminder_repository.dart';
